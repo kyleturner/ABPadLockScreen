@@ -54,6 +54,7 @@
         self.delegate = delegate;
         _setupScreenDelegate = delegate;
         _enteredPin = nil;
+        lockScreenView.touchIDDelegate = self;
         [self setDefaultTexts];
     }
     return self;
@@ -105,6 +106,11 @@
     self.currentPin = @"";
     [lockScreenView updateDetailLabelWithString:self.pinConfirmationText animated:YES completion:nil];
     [lockScreenView resetAnimated:YES];
+}
+
+- (void)touchIDWasAccepted
+{
+    [self.setupScreenDelegate pinSet:nil padLockScreenSetupViewController:self];
 }
          
 - (void)validateConfirmedPin

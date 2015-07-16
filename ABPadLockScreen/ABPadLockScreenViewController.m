@@ -52,6 +52,7 @@
         self.delegate = delegate;
         _lockScreenDelegate = delegate;
         _remainingAttempts = -1;
+        lockScreenView.touchIDDelegate = self;
         
         _lockedOutString = NSLocalizedString(@"You have been locked out.", @"");
         _pluralAttemptsLeftString = NSLocalizedString(@"attempts left", @"");

@@ -23,6 +23,9 @@
 #import "ABPadLockScreenView.h"
 #import "ABPadButton.h"
 #import "ABPinSelectionView.h"
+// Touch ID
+#import <LocalAuthentication/LocalAuthentication.h>
+
 
 #define animationLength 0.15
 #define IS_IPHONE5 ([UIScreen mainScreen].bounds.size.height==568)
@@ -117,6 +120,11 @@
 		_cancelButton = [UIButton buttonWithType:buttonType];
         [_cancelButton setTitle:NSLocalizedString(@"Cancel", @"") forState:UIControlStateNormal];
 		_cancelButton.contentHorizontalAlignment = UIControlContentHorizontalAlignmentRight;
+
+        _touchIDButton = [UIButton buttonWithType:buttonType];
+        [_touchIDButton setTitle:NSLocalizedString(@"Touch ID", @"") forState:UIControlStateNormal];
+        _touchIDButton.contentHorizontalAlignment = UIControlContentHorizontalAlignmentLeft;
+        [_touchIDButton addTarget:self action:@selector(showTouchID) forControlEvents:UIControlEventTouchUpInside];
         
         _deleteButton = [UIButton buttonWithType:buttonType];
         [_deleteButton setTitle:NSLocalizedString(@"Delete", @"") forState:UIControlStateNormal];
@@ -133,6 +141,57 @@
     }
     return self;
 }
+
+- (void)showTouchID
+{
+    LAContext *myContext = [LAContext new];
+    NSError *authError = nil;
+    NSString *myLocalizedReasonString = @"Please scan your Touch ID for session verification.";
+
+    __weak typeof(self) weakSelf = self;
+    if ([myContext canEvaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics error:&authError]) {
+        [myContext evaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics
+                  localizedReason:myLocalizedReasonString
+                            reply:^(BOOL success, NSError *error) {
+                                if (success) {
+                                    dispatch_async(dispatch_get_main_queue(), ^{
+                                        NSLog(@"SUCCESS PIN");
+                                        if (self.touchIDDelegate) {
+                                            // Default case
+                                            if ([weakSelf.touchIDDelegate respondsToSelector:@selector(unlockScreen)]) {
+                                                [weakSelf.touchIDDelegate performSelector:@selector(unlockScreen)];
+                                            }
+                                            // First time case
+                                            else if ([weakSelf.touchIDDelegate respondsToSelector:@selector(touchIDWasAccepted)]) {
+                                                [weakSelf.touchIDDelegate performSelector:@selector(touchIDWasAccepted)];
+                                            }
+                                        }
+                                    });
+                                } else {
+                                    dispatch_async(dispatch_get_main_queue(), ^{
+                                        // Rather than show a UIAlert here, use the error to determine if you should push to a keypad for PIN entry.
+                                        UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:@"Error"
+                                                                                            message:error.description
+                                                                                           delegate:weakSelf
+                                                                                  cancelButtonTitle:@"OK"
+                                                                                  otherButtonTitles:nil, nil];
+                                        [alertView show];
+                                    });
+                                }
+                            }];
+    } else {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:@"Error"
+                                                                message:authError.description
+                                                               delegate:weakSelf
+                                                      cancelButtonTitle:@"OK"
+                                                      otherButtonTitles:nil, nil];
+            [alertView show];
+            // Rather than show a UIAlert here, use the error to determine if you should push to a keypad for PIN entry.
+        });
+    }
+}
+
 
 #pragma mark -
 #pragma mark - Lifecycle Methods
@@ -385,7 +444,10 @@
     
     [self.cancelButton setTitleColor:self.labelColor forState:UIControlStateNormal];
     self.cancelButton.titleLabel.font = self.deleteCancelLabelFont;
-    
+
+    [self.touchIDButton setTitleColor:self.labelColor forState:UIControlStateNormal];
+    self.touchIDButton.titleLabel.font = self.deleteCancelLabelFont;
+
     [self.deleteButton setTitleColor:self.labelColor forState:UIControlStateNormal];
     self.deleteButton.titleLabel.font = self.deleteCancelLabelFont;
 
@@ -482,16 +544,19 @@
     [self setUpButton:self.buttonZero left:centerButtonLeft top:zeroRowTop];
     
 	CGRect deleteCancelButtonFrame = CGRectMake(rightButtonLeft, zeroRowTop + ABPadButtonHeight + 25, ABPadButtonWidth, 20);
+    CGRect touchIDButtonFrame = CGRectMake(lefButtonLeft, zeroRowTop + ABPadButtonHeight + 25, ABPadButtonWidth, 20);
 	if(!IS_IPHONE5)
 	{
 		//Bring it higher for small device screens
 		deleteCancelButtonFrame = CGRectMake(rightButtonLeft, zeroRowTop + ABPadButtonHeight - 20, ABPadButtonWidth, 20);
+        touchIDButtonFrame = CGRectMake(lefButtonLeft, zeroRowTop + ABPadButtonHeight - 20, ABPadButtonWidth, 20);
 	}
 	
 	if(UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad)
 	{
 		//Center it with zero button
 		deleteCancelButtonFrame = CGRectMake(rightButtonLeft, zeroRowTop + (ABPadButtonHeight / 2 - 10), ABPadButtonWidth, 20);
+        touchIDButtonFrame = CGRectMake(lefButtonLeft, zeroRowTop + (ABPadButtonHeight / 2 - 10), ABPadButtonWidth, 20);
 	}
 	
     if (!self.cancelButtonDisabled)
@@ -499,6 +564,8 @@
         self.cancelButton.frame = deleteCancelButtonFrame;
         [self.contentView addSubview:self.cancelButton];
     }
+    self.touchIDButton.frame = touchIDButtonFrame;
+    [self.contentView addSubview:self.touchIDButton];
     
     self.deleteButton.frame = deleteCancelButtonFrame;
     [self.contentView addSubview:self.deleteButton];

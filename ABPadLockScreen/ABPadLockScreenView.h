@@ -56,6 +56,9 @@
 @property (nonatomic, strong, readonly) UIButton *deleteButton;
 
 @property (nonatomic, strong, readonly) UIButton *okButton;
+@property (nonatomic, strong, readonly) UIButton *touchIDButton;
+
+@property (nonatomic, weak) id touchIDDelegate;
 
 /*
  Lazy loaded array that returns all the buttons ordered from 0-9
