@@ -169,13 +169,27 @@
                                     });
                                 } else {
                                     dispatch_async(dispatch_get_main_queue(), ^{
-                                        // Rather than show a UIAlert here, use the error to determine if you should push to a keypad for PIN entry.
-                                        UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:@"Error"
-                                                                                            message:error.description
-                                                                                           delegate:weakSelf
-                                                                                  cancelButtonTitle:@"OK"
-                                                                                  otherButtonTitles:nil, nil];
-                                        [alertView show];
+                                        // User denied TouchID and would prefer to just use PIN entry
+                                        BOOL localAuthDomainError = [error.domain isEqualToString:@"com.apple.LocalAuthentication"];
+                                        BOOL fallbackAuthenticationSelected = [error.localizedDescription isEqualToString:@"Fallback authentication mechanism selected."];
+                                        BOOL cancelledByUser = [error.localizedDescription isEqualToString:@"Canceled by user."];
+                                        if (localAuthDomainError) {
+                                            if (fallbackAuthenticationSelected) {
+                                                NSLog(@"[Local Authentication] Fallback authentication mechanism selected");
+                                            }
+                                            else if (cancelledByUser) {
+                                                NSLog(@"[Local Authentication] Canceled by user.");
+                                            }
+                                        }
+                                        else {
+                                            // Rather than show a UIAlert here, use the error to determine if you should push to a keypad for PIN entry.
+                                            UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:@"Error"
+                                                                                                message:error.description
+                                                                                               delegate:weakSelf
+                                                                                      cancelButtonTitle:@"OK"
+                                                                                      otherButtonTitles:nil, nil];
+                                            [alertView show];
+                                        }
                                     });
                                 }
                             }];
