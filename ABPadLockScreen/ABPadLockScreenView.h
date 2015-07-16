@@ -75,6 +75,7 @@
 - (void)showCancelButtonAnimated:(BOOL)animated completion:(void (^)(BOOL finished))completion;
 - (void)showDeleteButtonAnimated:(BOOL)animated completion:(void (^)(BOOL finished))completion;
 - (void)showOKButton:(BOOL)show animated:(BOOL)animated completion:(void (^)(BOOL finished))completion;
+- (void)showTouchID;
 
 - (void)updateDetailLabelWithString:(NSString *)string animated:(BOOL)animated completion:(void (^)(BOOL finished))completion;
 
